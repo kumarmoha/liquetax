@@ -1,0 +1,792 @@
+/**
+ * Liquetax Dashboard
+ * Main dashboard functionality for the Liquetax blog management system
+ */
+
+/**
+ * Clean up any stuck modal backdrops that might cause black screen
+ */
+function cleanupModalBackdrops() {
+    try {
+        // Remove any existing modal backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        if (backdrops.length > 0) {
+            console.log(`Found ${backdrops.length} modal backdrops to clean up`);
+            backdrops.forEach(backdrop => {
+                backdrop.classList.remove('show');
+                backdrop.classList.remove('fade');
+                backdrop.remove();
+            });
+        }
+        
+        // Reset body classes that Bootstrap might have added
+        if (document.body.classList.contains('modal-open')) {
+            document.body.classList.remove('modal-open');
+            document.body.style.overflow = '';
+            document.body.style.paddingRight = '';
+            console.log('Cleaned up modal-open class from body');
+        }
+    } catch (e) {
+        console.warn('Error during modal backdrop cleanup:', e);
+    }
+}
+
+// Initialize when document is ready
+document.addEventListener('DOMContentLoaded', function() {
+    try {
+        console.log('Dashboard initialized');
+        
+        // Clean up any stuck modal backdrops from previous sessions
+        cleanupModalBackdrops();
+        
+        // Check if bootstrap is loaded
+        ensureBootstrapLoaded(function() {
+            try {
+                console.log('Bootstrap loaded, continuing initialization');
+                
+                // Initialize UI components first
+                initNavigation();
+                initLoginSystem();
+                initFormsAndModals();
+                
+                // Add event listeners to simple login method buttons
+                setupSimpleLoginMethods();
+                
+                // Check login state after UI is initialized
+                checkLoginState();
+                
+                // Add safety mechanism for modal issues
+                // Set up a periodic check for stuck backdrops
+                setInterval(cleanupModalBackdrops, 5000);
+                
+                // Add event listener to handle ESC key to close modals and clean up backdrops
+                document.addEventListener('keydown', function(event) {
+                    if (event.key === 'Escape') {
+                        console.log('ESC key pressed, cleaning up modals');
+                        cleanupModalBackdrops();
+                    }
+                });
+                
+                // Auto login with demo credentials if not logged in
+                // Use setTimeout to ensure the DOM is fully ready
+                setTimeout(function() {
+                    if (localStorage.getItem('isLoggedIn') !== 'true') {
+                        console.log('Auto login with demo credentials');
+                        
+                        // Set demo values into form fields if they exist
+                        const emailField = document.getElementById('login-email');
+                        const passwordField = document.getElementById('login-password');
+                        
+                        if (emailField && passwordField) {
+                            console.log('Login fields found, setting demo values');
+                            emailField.value = 'demo@liquetax.com';
+                            passwordField.value = 'demo123';
+                            
+                            // Automatically log in after a short delay
+                            setTimeout(function() {
+                                console.log('Attempting auto-login');
+                                try {
+                                    handleLogin();
+                                } catch (loginError) {
+                                    console.error('Auto-login failed:', loginError);
+                                    // Clean up any stuck modals if login fails
+                                    cleanupModalBackdrops();
+                                }
+                            }, 500);
+                        } else {
+                            console.warn('Login fields not found for auto-login');
+                        }
+                    } else {
+                        console.log('User already logged in, skipping auto-login');
+                    }
+                }, 300);
+                
+                // Restore connection status for social accounts
+                restoreSocialConnectionStatus();
+            } catch (error) {
+                console.error('Error during dashboard initialization:', error);
+                alert('There was an error initializing the dashboard. Please check the console for details.');
+                // Clean up any stuck modals if there's an error
+                cleanupModalBackdrops();
+            }
+        });
+        
+        // Add event listener to logout button (doesn't depend on bootstrap)
+        const logoutButton = document.getElementById('logout-button');
+        if (logoutButton) {
+            console.log('Adding event listener to logout button');
+            logoutButton.addEventListener('click', handleLogout);
+        } else {
+            console.warn('Logout button not found');
+        }
+        
+        // Check for direct errors
+        warnAboutMissingDependencies();
+    } catch (error) {
+        console.error('Fatal error during dashboard initialization:', error);
+        
+        // Clean up any stuck modals if there's a fatal error
+        cleanupModalBackdrops();
+        
+        // Display user-friendly error message on page
+        const body = document.querySelector('body');
+        if (body) {
+            body.innerHTML = `
+                <div style="text-align: center; margin-top: 100px; font-family: Arial, sans-serif;">
+                    <h1>Dashboard Error</h1>
+                    <p>There was a problem loading the dashboard. Please try refreshing the page.</p>
+                    <p>Error details: ${error.message}</p>
+                    <button onclick="location.reload()" style="padding: 10px 20px; margin-top: 20px;">Refresh Page</button>
+                </div>
+            `;
+        }
+    }
+});
+
+/**
+ * Ensure Bootstrap is loaded before continuing
+ * @param {Function} callback - Function to call when bootstrap is loaded
+ */
+function ensureBootstrapLoaded(callback) {
+    // Check if bootstrap is already loaded
+    if (typeof bootstrap !== 'undefined') {
+        console.log('Bootstrap already loaded');
+        callback();
+        return;
+    }
+    
+    console.warn('Bootstrap not loaded! Attempting to load it now...');
+    
+    // First check if the script tag already exists but hasn't initialized yet
+    const existingScript = document.querySelector('script[src*="bootstrap"]');
+    if (existingScript) {
+        console.log('Bootstrap script tag found but not initialized yet, waiting...');
+        // Wait a bit longer for it to initialize
+        setTimeout(function() {
+            if (typeof bootstrap !== 'undefined') {
+                console.log('Bootstrap initialized after waiting');
+                callback();
+            } else {
+                // Still not loaded, try to load it manually
+                loadBootstrapManually(callback);
+            }
+        }, 500);
+        return;
+    }
+    
+    // No existing script found, load it manually
+    loadBootstrapManually(callback);
+}
+
+/**
+ * Helper function to manually load Bootstrap
+ * @param {Function} callback - Function to call when bootstrap is loaded
+ */
+function loadBootstrapManually(callback) {
+    // Load jQuery first if it's not available (Bootstrap might need it)
+    if (typeof jQuery === 'undefined') {
+        console.log('jQuery not found, loading it first...');
+        const jQueryScript = document.createElement('script');
+        jQueryScript.src = 'https://cdn.jsdelivr.net/npm/jquery@3.7.1/dist/jquery.min.js';
+        
+        jQueryScript.onload = function() {
+            console.log('jQuery loaded successfully, now loading Bootstrap...');
+            loadBootstrapScript(callback);
+        };
+        
+        jQueryScript.onerror = function() {
+            console.error('Failed to load jQuery, still trying Bootstrap...');
+            loadBootstrapScript(callback);
+        };
+        
+        document.head.appendChild(jQueryScript);
+    } else {
+        // jQuery already loaded, proceed with Bootstrap
+        loadBootstrapScript(callback);
+    }
+}
+
+/**
+ * Helper function to load the Bootstrap script
+ * @param {Function} callback - Function to call when bootstrap is loaded
+ */
+function loadBootstrapScript(callback) {
+    // Try to load bootstrap
+    const bootstrapScript = document.createElement('script');
+    bootstrapScript.src = 'https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js';
+    
+    bootstrapScript.onload = function() {
+        console.log('Bootstrap loaded successfully!');
+        // Wait a short moment for Bootstrap to initialize
+        setTimeout(function() {
+            if (typeof bootstrap !== 'undefined') {
+                console.log('Bootstrap initialized correctly');
+                callback();
+            } else {
+                console.error('Bootstrap loaded but not initialized properly');
+                // Try to continue anyway
+                callback();
+            }
+        }, 300);
+    };
+    
+    bootstrapScript.onerror = function() {
+        console.error('Failed to load Bootstrap. Some features may not work correctly.');
+        // Still try to continue anyway
+        callback();
+    };
+    
+    document.head.appendChild(bootstrapScript);
+}
+
+/**
+ * Check if user is logged in and update UI accordingly
+ */
+function checkLoginState() {
+    const isLoggedIn = localStorage.getItem('isLoggedIn') === 'true';
+    console.log('Login state:', isLoggedIn ? 'Logged in' : 'Not logged in');
+    
+    // Enable or disable elements based on login state
+    const loginBtn = document.getElementById('loginToConnectBtn');
+    const socialButtons = document.querySelectorAll('.social-connect-btn');
+    
+    if (isLoggedIn) {
+        if (loginBtn) {
+            loginBtn.innerHTML = '<i class="fas fa-user me-2"></i>Connected';
+            loginBtn.classList.remove('btn-primary');
+            loginBtn.classList.add('btn-success');
+            loginBtn.disabled = true;
+        }
+        
+        socialButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+    } else {
+        if (loginBtn) {
+            loginBtn.innerHTML = '<i class="fas fa-sign-in-alt me-2"></i>Login to Connect';
+            loginBtn.classList.remove('btn-success');
+            loginBtn.classList.add('btn-primary');
+            loginBtn.disabled = false;
+        }
+        
+        // Enable social buttons regardless of login state to fix Facebook and LinkedIn login issues
+        socialButtons.forEach(btn => {
+            btn.disabled = false;
+        });
+    }
+}
+
+/**
+ * Initialize navigation between dashboard sections
+ */
+function initNavigation() {
+    const navLinks = document.querySelectorAll('.nav-link[data-section]');
+    const sections = document.querySelectorAll('.section');
+    
+    navLinks.forEach(link => {
+        link.addEventListener('click', function(e) {
+            e.preventDefault();
+            
+            const targetSection = this.getAttribute('data-section');
+            console.log('Navigating to section:', targetSection);
+            
+            // Hide all sections
+            sections.forEach(section => {
+                section.style.display = 'none';
+            });
+            
+            // Show target section
+            const targetElement = document.getElementById(targetSection);
+            if (targetElement) {
+                targetElement.style.display = 'block';
+            }
+            
+            // Update active state in navigation
+            navLinks.forEach(navLink => {
+                navLink.classList.remove('active');
+            });
+            this.classList.add('active');
+        });
+    });
+    
+    // Initialize first section
+    const activeNavLink = document.querySelector('.nav-link.active[data-section]');
+    if (activeNavLink) {
+        const initialSection = activeNavLink.getAttribute('data-section');
+        sections.forEach(section => {
+            section.style.display = 'none';
+        });
+        const initialElement = document.getElementById(initialSection);
+        if (initialElement) {
+            initialElement.style.display = 'block';
+        }
+    }
+}
+
+/**
+ * Initialize login system
+ */
+function initLoginSystem() {
+    console.log('Initializing login system');
+    
+    // Login form submit - using direct approach to avoid event listener issues
+    const loginForm = document.getElementById('loginForm');
+    if (loginForm) {
+        console.log('Found login form, adding event listener');
+        
+        // First remove any existing listeners to avoid duplicates
+        const clonedForm = loginForm.cloneNode(true);
+        loginForm.parentNode.replaceChild(clonedForm, loginForm);
+        
+        // Add the event listener to the new form
+        clonedForm.addEventListener('submit', function(event) {
+            event.preventDefault();
+            console.log('Login form submitted');
+            handleLogin(event);
+        });
+        
+        // Also add click handler to the button as a fallback
+        const loginButton = clonedForm.querySelector('#login-button');
+        if (loginButton) {
+            loginButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                console.log('Login button clicked');
+                handleLogin(event);
+            });
+        }
+    } else {
+        // Fallback to button click if form not found
+        const loginButton = document.getElementById('login-button');
+        if (loginButton) {
+            console.log('Form not found, adding event listener to login button');
+            
+            // Clone and replace to remove existing listeners
+            const clonedButton = loginButton.cloneNode(true);
+            loginButton.parentNode.replaceChild(clonedButton, loginButton);
+            
+            clonedButton.addEventListener('click', function(event) {
+                event.preventDefault();
+                console.log('Login button clicked (fallback)');
+                handleLogin(event);
+            });
+        } else {
+            console.error('Login button and form not found');
+        }
+    }
+    
+    // Login modal close
+    const simpleLoginModal = document.getElementById('simpleLoginModal');
+    if (simpleLoginModal) {
+        console.log('Found login modal');
+        
+        // Add event listener for modal close
+        simpleLoginModal.addEventListener('hidden.bs.modal', function() {
+            // Reset form on modal close
+            const errorDiv = document.getElementById('login-error');
+            if (errorDiv) {
+                errorDiv.classList.add('d-none');
+            }
+            
+            // Clean up any stuck backdrops
+            cleanupModalBackdrops();
+        });
+        
+        // Add event listener for modal show
+        simpleLoginModal.addEventListener('shown.bs.modal', function() {
+            // Focus on email field
+            const emailField = document.getElementById('login-email');
+            if (emailField) {
+                emailField.focus();
+            }
+        });
+        
+        // Show modal if query parameter is present
+        if (window.location.search.includes('login=true')) {
+            console.log('Login parameter detected, showing modal');
+            try {
+                const modal = new bootstrap.Modal(simpleLoginModal);
+                modal.show();
+            } catch (e) {
+                console.error('Failed to show login modal:', e);
+                // Try jQuery fallback
+                if (window.jQuery) {
+                    try {
+                        $('#simpleLoginModal').modal('show');
+                    } catch (jqErr) {
+                        console.error('jQuery modal error:', jqErr);
+                    }
+                }
+            }
+        }
+    } else {
+        console.error('SimpleLoginModal not found');
+    }
+}
+
+/**
+ * Handle login form submission
+ */
+function handleLogin(event) {
+    if (event) {
+        event.preventDefault();
+    }
+    
+    console.log('Login attempt started');
+    
+    // Get username and password from form - using the correct IDs from HTML
+    const emailField = document.getElementById('login-email');
+    const passwordField = document.getElementById('login-password');
+    
+    if (!emailField || !passwordField) {
+        console.error('Login fields not found in the DOM');
+        alert('Login form is not properly loaded. Please refresh the page and try again.');
+        return;
+    }
+    
+    const email = emailField.value;
+    const password = passwordField.value;
+    
+    console.log('Email:', email, 'Password length:', password.length);
+    
+    // Basic validation
+    if (!email || !password) {
+        alert('Please enter both email and password');
+        return;
+    }
+    
+    // Perform authentication (using demo credentials)
+    if (email === 'demo@liquetax.com' && password === 'demo123') {
+        // Store user information in localStorage
+        try {
+            localStorage.setItem('isLoggedIn', 'true');
+            localStorage.setItem('userEmail', email);
+            console.log('Login data saved to localStorage');
+        } catch (e) {
+            console.error('Failed to save to localStorage:', e);
+            // Continue anyway - the login can still work for this session
+        }
+        
+        console.log('Login successful');
+        
+        // Hide error message if it's visible
+        const errorDiv = document.getElementById('login-error');
+        if (errorDiv) {
+            errorDiv.classList.add('d-none');
+        }
+        
+        // Close the modal using a simplified approach
+        closeLoginModal();
+        
+        // Update UI based on login state
+        updateUIForLoggedInUser(email);
+        
+        // Display success message
+        alert('Login successful!');
+        
+        // Return true to indicate successful login
+        return true;
+    } else {
+        console.log('Login failed: Invalid credentials');
+        
+        // Show error message
+        const errorDiv = document.getElementById('login-error');
+        if (errorDiv) {
+            errorDiv.classList.remove('d-none');
+        } else {
+            alert('Invalid login credentials');
+        }
+        
+        // Return false to indicate failed login
+        return false;
+    }
+}
+
+/**
+ * Helper function to close the login modal
+ */
+function closeLoginModal() {
+    const loginModal = document.getElementById('simpleLoginModal');
+    if (!loginModal) {
+        console.error('Login modal not found');
+        return;
+    }
+    
+    console.log('Attempting to close login modal');
+    
+    // First, ensure any modal backdrop is removed to prevent black screen
+    try {
+        // Remove any existing modal backdrops
+        const backdrops = document.querySelectorAll('.modal-backdrop');
+        backdrops.forEach(backdrop => {
+            backdrop.classList.remove('show');
+            backdrop.classList.remove('fade');
+            backdrop.remove();
+        });
+        
+        // Reset body classes that Bootstrap might have added
+        document.body.classList.remove('modal-open');
+        document.body.style.overflow = '';
+        document.body.style.paddingRight = '';
+    } catch (e) {
+        console.warn('Error cleaning up modal backdrop:', e);
+    }
+    
+    // Method 1: Bootstrap 5 way - most reliable
+    if (typeof bootstrap !== 'undefined') {
+        try {
+            const bootstrapModal = bootstrap.Modal.getInstance(loginModal);
+            if (bootstrapModal) {
+                bootstrapModal.hide();
+                console.log('Modal closed with Bootstrap 5 method');
+                return;
+            }
+        } catch (e) {
+            console.warn('Error with Bootstrap modal instance:', e);
+        }
+    }
+    
+    // Method 2: jQuery way
+    if (typeof jQuery !== 'undefined') {
+        try {
+            jQuery(loginModal).modal('hide');
+            console.log('Modal closed with jQuery');
+            return;
+        } catch (e) {
+            console.warn('Error with jQuery modal:', e);
+        }
+    }
+    
+    // Method 3: Click the close button
+    try {
+        const closeButton = loginModal.querySelector('.btn-close');
+        if (closeButton) {
+            closeButton.click();
+            console.log('Modal closed by clicking close button');
+            return;
+        }
+    } catch (e) {
+        console.warn('Error clicking close button:', e);
+    }
+    
+    // Method 4: Direct DOM manipulation as last resort
+    try {
+        // Hide the modal directly
+        loginModal.classList.remove('show');
+        loginModal.style.display = 'none';
+        loginModal.setAttribute('aria-hidden', 'true');
+        console.log('Modal hidden with direct DOM manipulation');
+    } catch (e) {
+        console.error('All methods to close modal failed:', e);
+    }
+}
+
+/**
+ * Initialize forms and modals throughout the dashboard
+ */
+function initFormsAndModals() {
+    // Handle mobile sidebar toggle
+    const toggleSidebarBtn = document.getElementById('toggleSidebar');
+    const sidebar = document.querySelector('.sidebar');
+    
+    if (toggleSidebarBtn && sidebar) {
+        toggleSidebarBtn.addEventListener('click', function() {
+            sidebar.classList.toggle('show-sidebar');
+        });
+    }
+}
+
+/**
+ * Show notification about missing dependencies
+ */
+function warnAboutMissingDependencies() {
+    const missingDependencies = [];
+    
+    // Check for key libraries
+    if (typeof bootstrap === 'undefined') {
+        missingDependencies.push('Bootstrap');
+    }
+    
+    if (typeof Quill === 'undefined' && document.getElementById('editor')) {
+        console.warn('Quill editor is not loaded but editor element exists');
+    }
+    
+    if (typeof Chart === 'undefined' && (
+        document.getElementById('trafficChart') || 
+        document.getElementById('sourcesChart') || 
+        document.getElementById('categoriesChart')
+    )) {
+        console.warn('Chart.js is not loaded but chart elements exist');
+    }
+    
+    if (missingDependencies.length > 0) {
+        console.warn('Missing dependencies:', missingDependencies.join(', '));
+    }
+}
+
+/**
+ * Check if an element exists in the DOM
+ * @param {string} selector - CSS selector for the element
+ * @returns {boolean} - Whether the element exists
+ */
+function elementExists(selector) {
+    return document.querySelector(selector) !== null;
+}
+
+// Add logout functionality
+function handleLogout() {
+    localStorage.removeItem('isLoggedIn');
+    localStorage.removeItem('userEmail');
+    checkLoginState();
+    console.log('User logged out');
+    alert('You have been logged out successfully.');
+    return false; // Prevent default link behavior
+}
+
+/**
+ * Update UI for logged in user
+ */
+function updateUIForLoggedInUser(email) {
+    // Enable social connect buttons
+    document.querySelectorAll('.social-connect-btn').forEach(function(btn) {
+        btn.disabled = false;
+    });
+    
+    // Update login button
+    var loginBtn = document.getElementById('loginToConnectBtn');
+    if (loginBtn) {
+        loginBtn.innerHTML = '<i class="fas fa-user me-2"></i>Connected';
+        loginBtn.classList.remove('btn-primary');
+        loginBtn.classList.add('btn-success');
+        loginBtn.disabled = true;
+    }
+    
+    console.log('UI updated for logged in user:', email);
+}
+
+/**
+ * Setup event listeners for simple login method buttons
+ */
+function setupSimpleLoginMethods() {
+    // Google simple login method
+    const googleSimpleMethod = document.getElementById('googleSimpleMethod');
+    if (googleSimpleMethod) {
+        googleSimpleMethod.addEventListener('click', function() {
+            // Check if user is logged in first
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                alert('Please log in first before connecting social accounts');
+                
+                // Open the login modal
+                const loginModal = document.getElementById('simpleLoginModal');
+                if (loginModal && window.bootstrap) {
+                    const modal = new bootstrap.Modal(loginModal);
+                    modal.show();
+                } else if (loginModal && window.jQuery) {
+                    $('#simpleLoginModal').modal('show');
+                }
+                
+                return;
+            }
+            
+            // Simulate Google login flow
+            alert('Google connection initiated. This is a simulated connection for demo purposes.');
+            this.innerHTML = '<i class="fab fa-google me-2"></i>Connected';
+            this.classList.remove('btn-outline-danger');
+            this.classList.add('btn-danger');
+        });
+    }
+    
+    // Facebook simple login method
+    const facebookSimpleMethod = document.getElementById('facebookSimpleMethod');
+    if (facebookSimpleMethod) {
+        facebookSimpleMethod.addEventListener('click', function() {
+            // Check if user is logged in first
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                alert('Please log in first before connecting social accounts');
+                
+                // Open the login modal
+                const loginModal = document.getElementById('simpleLoginModal');
+                if (loginModal && window.bootstrap) {
+                    const modal = new bootstrap.Modal(loginModal);
+                    modal.show();
+                } else if (loginModal && window.jQuery) {
+                    $('#simpleLoginModal').modal('show');
+                }
+                
+                return;
+            }
+            
+            // Simulate Facebook login flow
+            alert('Facebook connection initiated. This is a simulated connection for demo purposes.');
+            this.innerHTML = '<i class="fab fa-facebook me-2"></i>Connected';
+            this.classList.remove('btn-outline-primary');
+            this.classList.add('btn-primary');
+        });
+    }
+    
+    // LinkedIn simple login method
+    const linkedinSimpleMethod = document.getElementById('linkedinSimpleMethod');
+    if (linkedinSimpleMethod) {
+        linkedinSimpleMethod.addEventListener('click', function() {
+            // Check if user is logged in first
+            if (localStorage.getItem('isLoggedIn') !== 'true') {
+                alert('Please log in first before connecting social accounts');
+                
+                // Open the login modal
+                const loginModal = document.getElementById('simpleLoginModal');
+                if (loginModal && window.bootstrap) {
+                    const modal = new bootstrap.Modal(loginModal);
+                    modal.show();
+                } else if (loginModal && window.jQuery) {
+                    $('#simpleLoginModal').modal('show');
+                }
+                
+                return;
+            }
+            
+            // Simulate LinkedIn login flow
+            alert('LinkedIn connection initiated. This is a simulated connection for demo purposes.');
+            this.innerHTML = '<i class="fab fa-linkedin me-2"></i>Connected';
+            this.classList.remove('btn-outline-info');
+            this.classList.add('btn-info');
+        });
+    }
+}
+
+/**
+ * Restore social connection status from localStorage
+ */
+function restoreSocialConnectionStatus() {
+    // Only restore if user is logged in
+    if (localStorage.getItem('isLoggedIn') !== 'true') {
+        return;
+    }
+    
+    // Check if any social accounts were connected
+    const googleConnected = localStorage.getItem('googleConnected') === 'true';
+    const facebookConnected = localStorage.getItem('facebookConnected') === 'true';
+    const linkedinConnected = localStorage.getItem('linkedinConnected') === 'true';
+    
+    // Update UI for Google
+    const googleBtn = document.getElementById('googleSimpleMethod');
+    if (googleBtn && googleConnected) {
+        googleBtn.innerHTML = '<i class="fab fa-google me-2"></i>Connected';
+        googleBtn.classList.remove('btn-outline-danger');
+        googleBtn.classList.add('btn-danger');
+    }
+    
+    // Update UI for Facebook
+    const facebookBtn = document.getElementById('facebookSimpleMethod');
+    if (facebookBtn && facebookConnected) {
+        facebookBtn.innerHTML = '<i class="fab fa-facebook me-2"></i>Connected';
+        facebookBtn.classList.remove('btn-outline-primary');
+        facebookBtn.classList.add('btn-primary');
+    }
+    
+    // Update UI for LinkedIn
+    const linkedinBtn = document.getElementById('linkedinSimpleMethod');
+    if (linkedinBtn && linkedinConnected) {
+        linkedinBtn.innerHTML = '<i class="fab fa-linkedin me-2"></i>Connected';
+        linkedinBtn.classList.remove('btn-outline-info');
+        linkedinBtn.classList.add('btn-info');
+    }
+}

@@ -1,0 +1,1 @@
+window.directLogin = function(platform) { localStorage.setItem('isLoggedIn', 'true'); localStorage.setItem('userEmail', platform + '.user@example.com'); localStorage.setItem(platform + 'Connected', 'true'); alert('Successfully logged in with ' + platform + '!'); location.reload(); return false; }

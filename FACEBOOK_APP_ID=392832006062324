@@ -1,0 +1,12 @@
+FACEBOOK_APP_ID=392832006062324
+FACEBOOK_APP_SECRET=78ba08a3e9b929cae8e0d42759205a88
+FACEBOOK_CALLBACK_URL=https://liquetax.com/auth/facebook/callback
+
+GOOGLE_CLIENT_ID=1081865430217-dvtof89l2ec0crnjdcu07mip9b5fsun3.apps.googleusercontent.com
+GOOGLE_CLIENT_SECRET=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
+GOOGLE_CALLBACK_URL=https://liquetax.com/auth/google/callback
+
+PAGE_ACCESS_TOKEN=EAAFlR1QtgPQBO28rZC0o5la4dbASW...
+APP_ACCESS_TOKEN=EAAFlR1QtgPQBOw2nyAr8eJdS5Uvx...
+
+# Replace values exactly as shared.

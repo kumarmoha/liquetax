@@ -1,0 +1,281 @@
+/**
+ * Liquetax Dashboard Styles
+ * Modern, responsive styles for the blog management dashboard
+ */
+
+:root {
+    --primary-color: #0c3c63;
+    --secondary-color: #1c5a8d;
+    --success-color: #28a745;
+    --danger-color: #dc3545;
+    --warning-color: #ffc107;
+    --info-color: #17a2b8;
+    --light-bg: #f8f9fa;
+    --light-color: #f8f9fa;
+    --dark-color: #343a40;
+    --text-dark: #2c3e50;
+    --text-light: #7f8c8d;
+    --card-shadow: 0 8px 15px rgba(0, 0, 0, 0.1);
+    --hover-shadow: 0 12px 20px rgba(0, 0, 0, 0.15);
+    --border-radius: 12px;
+}
+
+/* Animations */
+@keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes pulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}
+
+@keyframes slideInLeft {
+    from { opacity: 0; transform: translateX(-20px); }
+    to { opacity: 1; transform: translateX(0); }
+}
+
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--light-bg);
+    overflow-x: hidden;
+    color: var(--text-dark);
+    line-height: 1.6;
+}
+
+.sidebar {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    min-height: 100vh;
+    color: white;
+    position: fixed;
+    width: inherit;
+    max-width: inherit;
+    z-index: 100;
+    transition: all 0.3s;
+    box-shadow: 3px 0 15px rgba(0, 0, 0, 0.1);
+}
+
+.sidebar-header {
+    padding: 25px 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    text-align: center;
+}
+
+.sidebar-header h4 {
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 5px;
+}
+
+.sidebar .nav-link {
+    padding: 14px 18px;
+    border-radius: 8px;
+    margin: 8px 10px;
+    transition: all 0.3s;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    display: flex;
+    align-items: center;
+}
+
+.sidebar .nav-link i {
+    font-size: 1.1rem;
+    margin-right: 12px;
+    width: 24px;
+    text-align: center;
+    transition: transform 0.2s;
+}
+
+.sidebar .nav-link:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    transform: translateX(3px);
+}
+
+.sidebar .nav-link:hover i {
+    transform: scale(1.1);
+}
+
+.sidebar .nav-link.active {
+    background-color: var(--success-color);
+    font-weight: 600;
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+}
+
+.main-content {
+    background-color: var(--light-bg);
+    min-height: 100vh;
+    margin-left: 16.66%;
+    transition: all 0.3s;
+    animation: fadeIn 0.5s ease-out;
+    padding-bottom: 50px;
+}
+
+@media (max-width: 992px) {
+    .sidebar {
+        margin-left: -100%;
+    }
+    .main-content {
+        margin-left: 0;
+    }
+    .sidebar.active {
+        margin-left: 0;
+    }
+    .main-content.active {
+        margin-left: 50%;
+    }
+}
+
+.card {
+    border-radius: var(--border-radius);
+    box-shadow: var(--card-shadow);
+    margin-bottom: 25px;
+    border: none;
+    transition: transform 0.3s, box-shadow 0.3s;
+    overflow: hidden;
+    background-color: white;
+}
+
+.card:hover {
+    transform: translateY(-7px);
+    box-shadow: var(--hover-shadow);
+}
+
+.card-body {
+    padding: 25px;
+}
+
+.card-title {
+    color: var(--primary-color);
+    font-weight: 600;
+    margin-bottom: 20px;
+    font-size: 1.25rem;
+}
+
+.stats-card {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    color: white;
+    position: relative;
+    overflow: hidden;
+    animation: slideInLeft 0.5s ease-out;
+    animation-fill-mode: both;
+}
+
+.stats-card::before {
+    content: '';
+    position: absolute;
+    top: -50%;
+    left: -50%;
+    width: 200%;
+    height: 200%;
+    background: radial-gradient(circle, rgba(255,255,255,0.1) 0%, rgba(255,255,255,0) 70%);
+    opacity: 0.6;
+}
+
+.stats-card .card-body {
+    padding: 25px;
+    position: relative;
+    z-index: 1;
+}
+
+.stats-card h5 {
+    font-size: 1rem;
+    opacity: 0.9;
+    font-weight: 500;
+    letter-spacing: 0.5px;
+    margin-bottom: 10px;
+}
+
+.stats-card h2 {
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.stats-card .icon {
+    font-size: 3.5rem;
+    opacity: 0.15;
+    position: absolute;
+    right: 20px;
+    bottom: 15px;
+    transform: rotate(-5deg);
+    transition: transform 0.3s;
+}
+
+.stats-card:hover .icon {
+    transform: rotate(0) scale(1.1);
+}
+
+.btn {
+    border-radius: var(--border-radius);
+    padding: 12px 22px;
+    font-weight: 500;
+    letter-spacing: 0.3px;
+    transition: all 0.3s;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--primary-color), var(--secondary-color));
+    border: none;
+    box-shadow: 0 4px 10px rgba(12, 60, 99, 0.3);
+}
+
+.btn-primary:hover {
+    background: linear-gradient(135deg, var(--secondary-color), var(--primary-color));
+    transform: translateY(-2px);
+    box-shadow: 0 6px 15px rgba(12, 60, 99, 0.4);
+}
+
+/* Apply staggered animations to stats cards */
+.col-xl-3:nth-child(1) .stats-card {
+    animation-delay: 0s;
+}
+
+.col-xl-3:nth-child(2) .stats-card {
+    animation-delay: 0.1s;
+}
+
+.col-xl-3:nth-child(3) .stats-card {
+    animation-delay: 0.2s;
+}
+
+.col-xl-3:nth-child(4) .stats-card {
+    animation-delay: 0.3s;
+}
+
+/* Fix for modal backdrop issues */
+.modal-backdrop {
+    opacity: 0.5 !important;
+    z-index: 1040 !important;
+}
+
+/* Ensure modal is above backdrop */
+.modal {
+    z-index: 1050 !important;
+}
+
+/* Fix for black screen issue */
+body.modal-open {
+    overflow: auto !important;
+    padding-right: 0 !important;
+}
+
+/* Ensure modal content is visible */
+.modal-content {
+    background-color: #fff !important;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* Fix for modal animation */
+.fade {
+    transition: opacity 0.15s linear !important;
+}
+
+/* Ensure modal is properly hidden when closed */
+.modal:not(.show) {
+    display: none !important;
+}
